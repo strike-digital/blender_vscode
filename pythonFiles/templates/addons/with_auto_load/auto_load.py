@@ -1,9 +1,13 @@
-import bpy
-import typing
+import importlib
 import inspect
 import pkgutil
-import importlib
+import typing
 from pathlib import Path
+from types import ModuleType
+from typing import Any, Generator, Type
+
+import bpy
+from bpy.types import bpy_struct
 
 __all__ = (
     "init",
@@ -51,16 +55,16 @@ def unregister():
 #################################################
 
 
-def get_all_submodules(directory):
+def get_all_submodules(directory: Path) -> list[ModuleType]:
     return list(iter_submodules(directory, directory.name))
 
 
-def iter_submodules(path, package_name):
+def iter_submodules(path: Path, package_name: str) -> Generator[ModuleType]:
     for name in sorted(iter_submodule_names(path)):
         yield importlib.import_module("." + name, package_name)
 
 
-def iter_submodule_names(path, root=""):
+def iter_submodule_names(path: Path, root: str = "") -> Generator[str]:
     for _, module_name, is_package in pkgutil.iter_modules([str(path)]):
         if is_package:
             sub_path = path / module_name
@@ -74,11 +78,11 @@ def iter_submodule_names(path, root=""):
 #################################################
 
 
-def get_ordered_classes_to_register(modules):
+def get_ordered_classes_to_register(modules: list[ModuleType]) -> list[Type]:
     return toposort(get_register_deps_dict(modules))
 
 
-def get_register_deps_dict(modules):
+def get_register_deps_dict(modules: list[ModuleType]) -> dict[Type, set[Type]]:
     my_classes = set(iter_my_classes(modules))
     my_classes_by_idname = {cls.bl_idname: cls for cls in my_classes if hasattr(cls, "bl_idname")}
 
@@ -88,12 +92,12 @@ def get_register_deps_dict(modules):
     return deps_dict
 
 
-def iter_my_register_deps(cls, my_classes, my_classes_by_idname):
+def iter_my_register_deps(cls: Type, my_classes: set[Type], my_classes_by_idname: dict[str, Type]) -> Generator[Type]:
     yield from iter_my_deps_from_annotations(cls, my_classes)
     yield from iter_my_deps_from_parent_id(cls, my_classes_by_idname)
 
 
-def iter_my_deps_from_annotations(cls, my_classes):
+def iter_my_deps_from_annotations(cls: Type, my_classes: set[Type]) -> Generator[Type]:
     for value in typing.get_type_hints(cls, {}, {}).values():
         dependency = get_dependency_from_annotation(value)
         if dependency is not None:
@@ -101,7 +105,7 @@ def iter_my_deps_from_annotations(cls, my_classes):
                 yield dependency
 
 
-def get_dependency_from_annotation(value):
+def get_dependency_from_annotation(value: Any) -> Type | None:
     if blender_version >= (2, 93):
         if isinstance(value, bpy.props._PropertyDeferred):
             return value.keywords.get("type")
@@ -112,7 +116,7 @@ def get_dependency_from_annotation(value):
     return None
 
 
-def iter_my_deps_from_parent_id(cls, my_classes_by_idname):
+def iter_my_deps_from_parent_id(cls: Type, my_classes_by_idname: dict[str, Type]) -> Generator[Type]:
     if bpy.types.Panel in cls.__bases__:
         parent_idname = getattr(cls, "bl_parent_id", None)
         if parent_idname is not None:
@@ -121,7 +125,7 @@ def iter_my_deps_from_parent_id(cls, my_classes_by_idname):
                 yield parent_cls
 
 
-def iter_my_classes(modules):
+def iter_my_classes(modules: list[ModuleType]) -> Generator[Type]:
     base_types = get_register_base_types()
     for cls in get_classes_in_modules(modules):
         if any(base in base_types for base in cls.__bases__):
@@ -129,7 +133,7 @@ def iter_my_classes(modules):
                 yield cls
 
 
-def get_classes_in_modules(modules):
+def get_classes_in_modules(modules: list[ModuleType]) -> set[Type]:
     classes = set()
     for module in modules:
         for cls in iter_classes_in_module(module):
@@ -137,13 +141,13 @@ def get_classes_in_modules(modules):
     return classes
 
 
-def iter_classes_in_module(module):
+def iter_classes_in_module(module: ModuleType) -> Generator[Type]:
     for value in module.__dict__.values():
         if inspect.isclass(value):
             yield value
 
 
-def get_register_base_types():
+def get_register_base_types() -> set[bpy_struct]:
     return set(
         getattr(bpy.types, name)
         for name in [
@@ -168,7 +172,7 @@ def get_register_base_types():
 #################################################
 
 
-def toposort(deps_dict):
+def toposort(deps_dict: dict[Type, set[Type]]) -> list[Type]:
     sorted_list = []
     sorted_values = set()
     while len(deps_dict) > 0:

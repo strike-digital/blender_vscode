@@ -5,15 +5,16 @@ import random
 import requests
 import threading
 from functools import partial
+from typing import Callable
 from .utils import run_in_main_thread
 from .environment import blender_path, scripts_folder
 
-EDITOR_ADDRESS = None
-OWN_SERVER_PORT = None
-DEBUGPY_PORT = None
+EDITOR_ADDRESS: str = None
+OWN_SERVER_PORT: int = None
+DEBUGPY_PORT: int = None
 
 
-def setup(address, path_mappings):
+def setup(address: str, path_mappings: list[dict[str, str]]):
     global EDITOR_ADDRESS, OWN_SERVER_PORT, DEBUGPY_PORT
     EDITOR_ADDRESS = address
 
@@ -27,7 +28,7 @@ def setup(address, path_mappings):
     print("Debug client attached.")
 
 
-def start_own_server():
+def start_own_server() -> int:
     port = [None]
 
     def server_thread_function():
@@ -48,7 +49,7 @@ def start_own_server():
     return port[0]
 
 
-def start_debug_server():
+def start_debug_server() -> int:
     while True:
         port = get_random_port()
         try:
@@ -63,7 +64,7 @@ def start_debug_server():
 #########################################
 
 server = flask.Flask("Blender Server")
-post_handlers = {}
+post_handlers: dict[str, Callable] = {}
 
 
 @server.route("/", methods=["POST"])
@@ -88,12 +89,12 @@ def handle_get():
     return "OK"
 
 
-def register_post_handler(type, handler):
+def register_post_handler(type: str, handler: Callable[[dict], None]):
     assert type not in post_handlers
     post_handlers[type] = handler
 
 
-def register_post_action(type, handler):
+def register_post_action(type: str, handler: Callable[[dict], None]):
     def request_handler_wrapper(data):
         run_in_main_thread(partial(handler, data))
         return "OK"
@@ -105,7 +106,7 @@ def register_post_action(type, handler):
 ###############################
 
 
-def send_connection_information(path_mappings):
+def send_connection_information(path_mappings: list[dict[str, str]]):
     send_dict_as_json(
         {
             "type": "setup",
@@ -118,7 +119,7 @@ def send_connection_information(path_mappings):
     )
 
 
-def send_dict_as_json(data):
+def send_dict_as_json(data: dict):
     print("Sending:", data)
     requests.post(EDITOR_ADDRESS, json=data)
 
@@ -127,17 +128,17 @@ def send_dict_as_json(data):
 ###############################
 
 
-def get_random_port():
+def get_random_port() -> int:
     return random.randint(2000, 10000)
 
 
-def get_blender_port():
+def get_blender_port() -> int:
     return OWN_SERVER_PORT
 
 
-def get_debugpy_port():
+def get_debugpy_port() -> int:
     return DEBUGPY_PORT
 
 
-def get_editor_address():
+def get_editor_address() -> str:
     return EDITOR_ADDRESS

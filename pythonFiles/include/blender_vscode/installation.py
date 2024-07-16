@@ -6,10 +6,10 @@ from pathlib import Path
 from . import handle_fatal_error
 from .environment import python_path, use_own_python
 
-cwd_for_subprocesses = python_path.parent
+cwd_for_subprocesses: Path = python_path.parent
 
 
-def ensure_packages_are_installed(package_names, allow_modify_external_python):
+def ensure_packages_are_installed(package_names: list[str], allow_modify_external_python: bool):
     if packages_are_installed(package_names):
         return
 
@@ -19,11 +19,11 @@ def ensure_packages_are_installed(package_names, allow_modify_external_python):
     install_packages(package_names)
 
 
-def packages_are_installed(package_names):
+def packages_are_installed(package_names: list[str]) -> bool:
     return all(module_can_be_imported(name) for name in package_names)
 
 
-def install_packages(package_names):
+def install_packages(package_names: list[str]):
     if not module_can_be_imported("pip"):
         install_pip()
 
@@ -33,12 +33,12 @@ def install_packages(package_names):
     assert packages_are_installed(package_names)
 
 
-def ensure_package_is_installed(name):
+def ensure_package_is_installed(name: str):
     if not module_can_be_imported(name):
         install_package(name)
 
 
-def install_package(name):
+def install_package(name: str):
     target = get_package_install_directory()
     subprocess.run([str(python_path), "-m", "pip", "install", name, "--target", target], cwd=cwd_for_subprocesses)
 
@@ -56,7 +56,7 @@ def install_pip():
     subprocess.run([str(python_path), str(get_pip_path)], cwd=cwd_for_subprocesses)
 
 
-def get_package_install_directory():
+def get_package_install_directory() -> str:
     for path in sys.path:
         if os.path.basename(path) in ("dist-packages", "site-packages"):
             return path
@@ -64,7 +64,7 @@ def get_package_install_directory():
     handle_fatal_error("Don't know where to install packages. Please make a bug report.")
 
 
-def module_can_be_imported(name):
+def module_can_be_imported(name: str):
     try:
         __import__(name)
         return True
@@ -72,7 +72,7 @@ def module_can_be_imported(name):
         return False
 
 
-def handle_cannot_install_packages(package_names):
+def handle_cannot_install_packages(package_names: list[str]):
     handle_fatal_error(
         textwrap.dedent(
             f"""\

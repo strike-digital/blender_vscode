@@ -11,7 +11,7 @@ from .environment import addon_directories
 from .utils import is_addon_legacy
 
 
-def setup_addon_links(addons_to_load: list[AddonInfo]):
+def setup_addon_links(addons_to_load: list[AddonInfo]) -> list[dict[str, str]]:
 
     path_mappings = []
 
@@ -60,7 +60,7 @@ def load(addons_to_load: list[AddonInfo]):
             send_dict_as_json({"type": "enableFailure", "addonPath": str(addon_info.load_dir)})
 
 
-def create_link_in_user_addon_directory(directory, link_path):
+def create_link_in_user_addon_directory(directory: Path, link_path: Path):
     if os.path.exists(link_path):
         os.remove(link_path)
 
@@ -72,7 +72,7 @@ def create_link_in_user_addon_directory(directory, link_path):
         os.symlink(str(directory), str(link_path), target_is_directory=True)
 
 
-def is_in_any_addon_directory(module_path):
+def is_in_any_addon_directory(module_path: Path) -> bool:
     for path in addon_directories:
         if path == module_path.parent:
             return True

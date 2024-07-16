@@ -11,7 +11,7 @@ class AddonInfo:
     module_name: str
 
 
-def startup(editor_address, addons_to_load: list[AddonInfo], allow_modify_external_python):
+def startup(editor_address: str, addons_to_load: list[AddonInfo], allow_modify_external_python: bool):
     if bpy.app.version < (2, 80, 34):
         handle_fatal_error("Please use a newer version of Blender")
 
@@ -35,7 +35,7 @@ def startup(editor_address, addons_to_load: list[AddonInfo], allow_modify_extern
     load_addons.load(addons_to_load)
 
 
-def handle_fatal_error(message):
+def handle_fatal_error(message: str):
     print()
     print("#" * 80)
     for line in message.splitlines():

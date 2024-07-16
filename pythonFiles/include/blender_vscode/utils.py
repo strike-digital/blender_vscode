@@ -1,10 +1,11 @@
 from pathlib import Path
+from typing import Callable
 import bpy
 import queue
 import traceback
 
 
-def is_addon_legacy(addon_dir: Path):
+def is_addon_legacy(addon_dir: Path) -> bool:
     """Return whether an addon uses the legacy bl_info behavior, or the new blender_manifest behavior"""
     if bpy.app.version < (4, 2, 0):
         return True
@@ -26,11 +27,11 @@ def get_prefixes(all_names, separator):
 execution_queue = queue.Queue()
 
 
-def run_in_main_thread(func):
+def run_in_main_thread(func: Callable):
     execution_queue.put(func)
 
 
-def always():
+def always() -> float:
     while not execution_queue.empty():
         func = execution_queue.get()
         try:

@@ -19,7 +19,7 @@ class RunScriptOperator(bpy.types.Operator):
         return {"FINISHED"}
 
 
-def run_script_action(data):
+def run_script_action(data: dict[str, str]):
     path = data["path"]
     context = prepare_script_context(path)
 
@@ -31,7 +31,7 @@ def run_script_action(data):
         bpy.ops.dev.run_script(filepath=path)
 
 
-def prepare_script_context(filepath):
+def prepare_script_context(filepath: str):
     with open(filepath) as fs:
         text = fs.read()
 
@@ -55,14 +55,14 @@ def prepare_script_context(filepath):
     return context
 
 
-def get_area_by_type(area_type):
+def get_area_by_type(area_type: str) -> bpy.types.Area | None:
     for area in bpy.data.window_managers[0].windows[0].screen.areas:
         if area.type == area_type:
             return area
     return None
 
 
-def get_region_in_area(area, region_type):
+def get_region_in_area(area: bpy.types.Area, region_type: str) -> bpy.types.Region | None:
     for region in area.regions:
         if region.type == region_type:
             return region

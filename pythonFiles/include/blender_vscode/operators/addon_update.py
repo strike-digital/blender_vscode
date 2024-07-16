@@ -38,7 +38,7 @@ class UpdateAddonOperator(bpy.types.Operator):
         return {"FINISHED"}
 
 
-def reload_addon_action(data):
+def reload_addon_action(data: dict[str, str]):
     module_names = []
     for name, dir in zip(data["names"], data["dirs"]):
         if is_addon_legacy(Path(dir)):
